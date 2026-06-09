@@ -8,13 +8,14 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const ADMIN_PASSWORD = "Real-Madrid-Is-The-King";
+const ADMIN_PASSWORD = "Real Madrid Is the King";
 
 const users = {};
 const admins = new Set();
 
 io.on("connection", (socket) => {
 
+  // JOIN ROOM
   socket.on("join-room", ({ roomId, nickname, password }) => {
 
     socket.join(roomId);
@@ -24,13 +25,14 @@ io.on("connection", (socket) => {
     users[socket.id] = {
       nickname,
       roomId,
-      muted: false
+      muted: false,
+      isAdmin: isAdmin
     };
 
     if (isAdmin) admins.add(socket.id);
 
     socket.emit("room-data", {
-      isAdmin,
+      isAdmin: users[socket.id].isAdmin,
       users: getUsers(roomId)
     });
 
@@ -38,6 +40,7 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("user-joined", socket.id);
   });
 
+  // USERS LIST
   function getUsers(roomId) {
     return Object.keys(users)
       .filter(id => users[id]?.roomId === roomId)
@@ -45,11 +48,11 @@ io.on("connection", (socket) => {
         id,
         nickname: users[id].nickname,
         muted: users[id].muted,
-        isAdmin: admins.has(id)
+        isAdmin: users[id].isAdmin
       }));
   }
 
-  // WebRTC
+  // WEBRTC
   socket.on("offer", d =>
     io.to(d.to).emit("offer", { offer: d.offer, from: socket.id })
   );
@@ -62,7 +65,7 @@ io.on("connection", (socket) => {
     io.to(d.to).emit("ice-candidate", { candidate: d.candidate, from: socket.id })
   );
 
-  // KICK
+  // 🚫 KICK
   socket.on("kick-user", ({ targetId }) => {
     if (admins.has(socket.id)) {
       io.to(targetId).emit("kicked");
@@ -70,7 +73,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // MUTE
+  // 🔇 MUTE (FIXED)
   socket.on("toggle-mute", ({ targetId }) => {
     if (admins.has(socket.id)) {
 
@@ -88,10 +91,20 @@ io.on("connection", (socket) => {
     }
   });
 
+  // DISCONNECT CLEANUP
   socket.on("disconnect", () => {
-    delete users[socket.id];
-    admins.delete(socket.id);
+    const user = users[socket.id];
+
+    if (user) {
+      const roomId = user.roomId;
+
+      delete users[socket.id];
+      admins.delete(socket.id);
+
+      io.to(roomId).emit("users-update", getUsers(roomId));
+    }
   });
+
 });
 
 const PORT = process.env.PORT || 3000;
