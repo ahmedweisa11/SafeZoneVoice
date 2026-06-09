@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h2>Voice Chat</h2>
+
+<input id="nickname" placeholder="Nickname" />
+<input id="room" placeholder="Room" />
+<input id="password" placeholder="Admin password" />
+
+<button onclick="joinRoom()">Join</button>
+
+<p id="status">Not connected</p>
+
+<audio id="remoteAudio" autoplay></audio>
+
+<div id="adminPanel" style="display:none;">
+  <h3>👑 Admin Panel</h3>
+  <div id="usersList"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
