@@ -1,10 +1,10 @@
-const socket = io("https://safezonevoice.up.railway.app/");
+const socket = io();
 
 let localStream;
 let peerConnections = {};
 let roomId;
 let myId;
-let adminId;
+let myIsAdmin = false;
 
 const config = {
   iceServers: [
@@ -37,18 +37,18 @@ async function joinRoom() {
 
 // ROOM DATA
 socket.on("room-data", (data) => {
-  adminId = data.admin;
 
-  if (myId === adminId) {
-    document.getElementById("adminPanel").style.display = "block";
-  }
+  myIsAdmin = data.isAdmin;
+
+  document.getElementById("adminPanel").style.display =
+    myIsAdmin ? "block" : "none";
 
   renderUsers(data.users);
 });
 
 socket.on("users-update", renderUsers);
 
-// USERS LIST
+// USERS
 function renderUsers(users) {
   const list = document.getElementById("usersList");
   list.innerHTML = "";
@@ -58,6 +58,7 @@ function renderUsers(users) {
 
     div.innerHTML = `
       <b>${u.nickname}</b>
+      ${u.isAdmin ? "👑" : ""}
       ${u.muted ? "🔇" : "🔊"}
       <button onclick="muteUser('${u.id}')">Mute</button>
       <button onclick="kickUser('${u.id}')">Kick</button>
@@ -76,13 +77,13 @@ function muteUser(id) {
   socket.emit("toggle-mute", { targetId: id });
 }
 
-// KICKED
+// KICK EVENT
 socket.on("kicked", () => {
   alert("You were kicked");
   location.reload();
 });
 
-// 🔇 MUTE FIX (THIS IS WHAT WAS BROKEN BEFORE)
+// MUTE FIX
 socket.on("mute-update", ({ targetId, muted }) => {
   const pc = peerConnections[targetId];
 
