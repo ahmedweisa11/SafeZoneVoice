@@ -1,4 +1,4 @@
-const socket = io();
+const socket = io("https://safezonevoice.up.railway.app/");
 
 let localStream;
 let peerConnections = {};
