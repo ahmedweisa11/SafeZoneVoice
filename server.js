@@ -27,9 +27,7 @@ io.on("connection", (socket) => {
       muted: false
     };
 
-    if (isAdmin) {
-      admins.add(socket.id);
-    }
+    if (isAdmin) admins.add(socket.id);
 
     socket.emit("room-data", {
       isAdmin,
@@ -51,7 +49,7 @@ io.on("connection", (socket) => {
       }));
   }
 
-  // WEBRTC
+  // WebRTC
   socket.on("offer", d =>
     io.to(d.to).emit("offer", { offer: d.offer, from: socket.id })
   );
@@ -64,7 +62,7 @@ io.on("connection", (socket) => {
     io.to(d.to).emit("ice-candidate", { candidate: d.candidate, from: socket.id })
   );
 
-  // 🚫 KICK
+  // KICK
   socket.on("kick-user", ({ targetId }) => {
     if (admins.has(socket.id)) {
       io.to(targetId).emit("kicked");
@@ -72,7 +70,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 🔇 MUTE FIX
+  // MUTE
   socket.on("toggle-mute", ({ targetId }) => {
     if (admins.has(socket.id)) {
 
@@ -90,14 +88,14 @@ io.on("connection", (socket) => {
     }
   });
 
-  // CLEANUP
   socket.on("disconnect", () => {
     delete users[socket.id];
     admins.delete(socket.id);
   });
-
 });
 
-server.listen(process.env.PORT || 3000, () => {
-  console.log("Server running...");
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log("Server running on port", PORT);
 });
