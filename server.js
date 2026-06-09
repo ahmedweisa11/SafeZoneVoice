@@ -58,7 +58,7 @@ io.on("connection", (socket) => {
       }));
   }
 
-  // WEBRTC
+  // WebRTC signaling
   socket.on("offer", d =>
     io.to(d.to).emit("offer", { offer: d.offer, from: socket.id })
   );
@@ -71,7 +71,7 @@ io.on("connection", (socket) => {
     io.to(d.to).emit("ice-candidate", { candidate: d.candidate, from: socket.id })
   );
 
-  // 🚫 KICK
+  // KICK
   socket.on("kick-user", ({ targetId }) => {
     const roomId = users[socket.id]?.roomId;
 
@@ -81,7 +81,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 🔇 MUTE (FIXED)
+  // MUTE FIX
   socket.on("toggle-mute", ({ targetId }) => {
     const roomId = users[socket.id]?.roomId;
 
@@ -118,6 +118,7 @@ io.on("connection", (socket) => {
   });
 });
 
+// 🔥 IMPORTANT FOR RAILWAY
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
