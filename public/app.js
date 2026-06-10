@@ -322,3 +322,25 @@ socket.on(
 
   }
 );
+
+socket.on("disconnect", () => {
+
+  Object.values(peerConnections).forEach(pc => {
+    pc.close();
+  });
+
+  peerConnections = {};
+
+});
+
+socket.on("user-left", (id) => {
+
+  if (peerConnections[id]) {
+
+    peerConnections[id].close();
+
+    delete peerConnections[id];
+
+  }
+
+});
