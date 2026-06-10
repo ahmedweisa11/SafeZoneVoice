@@ -8,6 +8,7 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
+const OWNER_PASSWORD = "DeathNote";
 const ADMIN_PASSWORD = "RMITK";
 
 const users = {};
@@ -18,17 +19,26 @@ io.on("connection", (socket) => {
   // JOIN ROOM
   socket.on("join-room", ({ nickname, password }) => {
 
-    const roomId = "main-room";
-    socket.join(roomId);
+    let role = "user";
 
-    const isAdmin = password === ADMIN_PASSWORD;
+    if (password === OWNER_PASSWORD) {
+      role = "owner";
+    } else if (password === ADMIN_PASSWORD) {
+      role = "admin";
+    }
 
     users[socket.id] = {
       nickname,
-      roomId,
-      muted: !isAdmin,
-      isAdmin: isAdmin
+      muted: role === "user",
+      role
     };
+
+    socket.emit("room-data", {
+      role,
+      users: roomUsers()
+    });
+
+  });
 
     if (isAdmin) admins.add(socket.id);
 
@@ -49,7 +59,7 @@ io.on("connection", (socket) => {
         id,
         nickname: users[id].nickname,
         muted: users[id].muted,
-        isAdmin: users[id].isAdmin
+        role: users[id].role
       }));
   }
 
