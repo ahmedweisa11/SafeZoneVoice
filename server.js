@@ -16,8 +16,9 @@ const admins = new Set();
 io.on("connection", (socket) => {
 
   // JOIN ROOM
-  socket.on("join-room", ({ roomId, nickname, password }) => {
+  socket.on("join-room", ({ nickname, password }) => {
 
+    const roomId = "main-room";
     socket.join(roomId);
 
     const isAdmin = password === ADMIN_PASSWORD;
