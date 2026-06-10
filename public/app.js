@@ -44,6 +44,14 @@ socket.on("room-data", (data) => {
     myIsAdmin ? "block" : "none";
 
   renderUsers(data.users);
+
+  const me = data.users.find(u => u.id === myId);
+
+  if (me && localStream) {
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = !me.muted;
+    });
+  }
 });
 
 socket.on("users-update", renderUsers);
@@ -60,7 +68,9 @@ function renderUsers(users) {
       <b>${u.nickname}</b>
       ${u.isAdmin ? "👑" : ""}
       ${u.muted ? "🔇" : "🔊"}
-      <button onclick="muteUser('${u.id}')">Mute</button>
+      <button onclick="muteUser('${u.id}')">
+        ${u.muted ? "Unmute" : "Mute"}
+      </button>
       <button onclick="kickUser('${u.id}')">Kick</button>
     `;
 
@@ -85,15 +95,16 @@ socket.on("kicked", () => {
 
 // MUTE FIX
 socket.on("mute-update", ({ targetId, muted }) => {
-  const pc = peerConnections[targetId];
 
-  if (pc) {
-    pc.getReceivers().forEach(receiver => {
-      if (receiver.track.kind === "audio") {
-        receiver.track.enabled = !muted;
-      }
+  if (targetId === myId && localStream) {
+
+    localStream.getAudioTracks().forEach(track => {
+      track.enabled = !muted;
     });
+
   }
+
+  renderUsersLastState?.();
 });
 
 // WEBRTC
