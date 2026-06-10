@@ -2,13 +2,14 @@ const socket = io();
 
 let localStream;
 let peerConnections = {};
-let roomId;
 let myId;
-let myIsAdmin = false;
+let myRole = "user";
 
 const config = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" }
+    {
+      urls: "stun:stun.l.google.com:19302"
+    }
   ]
 };
 
@@ -17,143 +18,307 @@ socket.on("connect", () => {
 });
 
 async function joinRoom() {
-  roomId = "main-room";
-  const nickname = document.getElementById("nickname").value;
-  const password = document.getElementById("password").value || "";
 
-  if (!nickname) return alert("Enter nickname");
+  const nickname =
+    document.getElementById("nickname").value.trim();
 
-  localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  const password =
+    document.getElementById("password").value.trim();
 
-  socket.emit("join-room", {
-    roomId,
-    nickname,
-    password
-  });
+  if (!nickname) {
+    alert("Enter nickname");
+    return;
+  }
 
-  document.getElementById("status").innerText =
-    "Joined as " + nickname;
+  try {
+
+    localStream =
+      await navigator.mediaDevices.getUserMedia({
+        audio: true
+      });
+
+    socket.emit("join-room", {
+      nickname,
+      password
+    });
+
+    document.getElementById("status").innerText =
+      "Joined as " + nickname;
+
+  } catch (err) {
+
+    alert("Microphone access denied");
+
+  }
+
 }
 
 // ROOM DATA
+
 socket.on("room-data", (data) => {
 
-  myIsAdmin = data.isAdmin;
+  myRole = data.role;
 
-  document.getElementById("adminPanel").style.display =
-    myIsAdmin ? "block" : "none";
+  if (
+    myRole === "owner" ||
+    myRole === "admin"
+  ) {
+
+    document.getElementById("adminPanel").style.display =
+      "block";
+
+  } else {
+
+    document.getElementById("adminPanel").style.display =
+      "none";
+
+  }
 
   renderUsers(data.users);
 
-  const me = data.users.find(u => u.id === myId);
-
-  if (me && localStream) {
-    localStream.getAudioTracks().forEach(track => {
-      track.enabled = !me.muted;
-    });
-  }
 });
 
-socket.on("users-update", renderUsers);
+// USERS UPDATE
 
-// USERS
+socket.on("users-update", (users) => {
+  renderUsers(users);
+});
+
+// USER LIST
+
 function renderUsers(users) {
-  const list = document.getElementById("usersList");
+
+  const list =
+    document.getElementById("usersList");
+
   list.innerHTML = "";
 
-  users.forEach(u => {
-    const div = document.createElement("div");
+  users.forEach(user => {
+
+    const div =
+      document.createElement("div");
+
+    let badge = "👤 USER";
+
+    if (user.role === "owner") {
+      badge = "👑 OWNER";
+    }
+
+    if (user.role === "admin") {
+      badge = "🛡️ ADMIN";
+    }
+
+    let buttons = "";
+
+    if (
+      myRole === "owner" ||
+      myRole === "admin"
+    ) {
+
+      buttons = `
+        <button onclick="muteUser('${user.id}')">
+          ${user.muted ? "Unmute" : "Mute"}
+        </button>
+
+        <button onclick="kickUser('${user.id}')">
+          Kick
+        </button>
+      `;
+    }
 
     div.innerHTML = `
-      <b>${u.nickname}</b>
-      ${getRoleBadge(u)}
-      ${u.muted ? "🔇" : "🔊"}
-      <button onclick="muteUser('${u.id}')">
-        ${u.muted ? "Unmute" : "Mute"}
-      </button>
-      <button onclick="kickUser('${u.id}')">Kick</button>
+      <b>${user.nickname}</b>
+      <span>${badge}</span>
+      <span>${user.muted ? "🔇" : "🔊"}</span>
+      ${buttons}
     `;
 
     list.appendChild(div);
+
   });
+
 }
 
-// ADMIN ACTIONS
-function kickUser(id) {
-  socket.emit("kick-user", { targetId: id });
-}
+// MUTE
 
 function muteUser(id) {
-  socket.emit("toggle-mute", { targetId: id });
+
+  socket.emit("toggle-mute", {
+    targetId: id
+  });
+
 }
 
-// KICK EVENT
+// KICK
+
+function kickUser(id) {
+
+  socket.emit("kick-user", {
+    targetId: id
+  });
+
+}
+
+// KICKED
+
 socket.on("kicked", () => {
+
   alert("You were kicked");
+
   location.reload();
+
 });
 
-// MUTE FIX
+// FORCED MUTE
+
 socket.on("mute-update", ({ targetId, muted }) => {
 
-  if (targetId === myId && localStream) {
+  if (
+    targetId === myId &&
+    localStream
+  ) {
 
-    localStream.getAudioTracks().forEach(track => {
-      track.enabled = !muted;
-    });
+    localStream
+      .getAudioTracks()
+      .forEach(track => {
+
+        track.enabled = !muted;
+
+      });
 
   }
 
-  renderUsersLastState?.();
+});
+
+// NEW USER
+
+socket.on("user-joined", id => {
+
+  createPeer(id, true);
+
 });
 
 // WEBRTC
-socket.on("user-joined", id => createPeer(id, true));
 
 function createPeer(id, initiator) {
-  const pc = new RTCPeerConnection(config);
+
+  const pc =
+    new RTCPeerConnection(config);
 
   peerConnections[id] = pc;
 
-  localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  if (localStream) {
 
-  pc.ontrack = e => {
-    document.getElementById("remoteAudio").srcObject = e.streams[0];
+    localStream
+      .getTracks()
+      .forEach(track => {
+
+        pc.addTrack(track, localStream);
+
+      });
+
+  }
+
+  pc.ontrack = event => {
+
+    document.getElementById(
+      "remoteAudio"
+    ).srcObject = event.streams[0];
+
   };
 
-  pc.onicecandidate = e => {
-    if (e.candidate) {
-      socket.emit("ice-candidate", { candidate: e.candidate, to: id });
+  pc.onicecandidate = event => {
+
+    if (event.candidate) {
+
+      socket.emit("ice-candidate", {
+        candidate: event.candidate,
+        to: id
+      });
+
     }
+
   };
 
   if (initiator) {
-    pc.createOffer().then(o => {
-      pc.setLocalDescription(o);
-      socket.emit("offer", { offer: o, to: id });
-    });
+
+    pc.createOffer()
+      .then(offer => {
+
+        return pc
+          .setLocalDescription(offer)
+          .then(() => offer);
+
+      })
+      .then(offer => {
+
+        socket.emit("offer", {
+          offer,
+          to: id
+        });
+
+      });
+
   }
 
   return pc;
+
 }
 
+// OFFER
+
 socket.on("offer", async ({ offer, from }) => {
-  const pc = createPeer(from, false);
 
-  await pc.setRemoteDescription(offer);
+  const pc =
+    createPeer(from, false);
 
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
+  await pc.setRemoteDescription(
+    new RTCSessionDescription(offer)
+  );
 
-  socket.emit("answer", { answer, to: from });
+  const answer =
+    await pc.createAnswer();
+
+  await pc.setLocalDescription(
+    answer
+  );
+
+  socket.emit("answer", {
+    answer,
+    to: from
+  });
+
 });
+
+// ANSWER
 
 socket.on("answer", async ({ answer, from }) => {
-  const pc = peerConnections[from];
-  if (pc) await pc.setRemoteDescription(answer);
+
+  const pc =
+    peerConnections[from];
+
+  if (!pc) return;
+
+  await pc.setRemoteDescription(
+    new RTCSessionDescription(answer)
+  );
+
 });
 
-socket.on("ice-candidate", async ({ candidate, from }) => {
-  const pc = peerConnections[from];
-  if (pc) await pc.addIceCandidate(candidate);
-});
+// ICE
+
+socket.on(
+  "ice-candidate",
+  async ({ candidate, from }) => {
+
+    const pc =
+      peerConnections[from];
+
+    if (!pc) return;
+
+    await pc.addIceCandidate(
+      new RTCIceCandidate(candidate)
+    );
+
+  }
+);
