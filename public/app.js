@@ -17,11 +17,11 @@ socket.on("connect", () => {
 });
 
 async function joinRoom() {
-  roomId = document.getElementById("room").value;
+  roomId = "main-room";
   const nickname = document.getElementById("nickname").value;
   const password = document.getElementById("password").value || "";
 
-  if (!roomId || !nickname) return alert("Fill all fields");
+  if (!nickname) return alert("Enter nickname");
 
   localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
