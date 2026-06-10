@@ -66,7 +66,7 @@ function renderUsers(users) {
 
     div.innerHTML = `
       <b>${u.nickname}</b>
-      ${u.isAdmin ? "👑" : ""}
+      ${getRoleBadge(u)}
       ${u.muted ? "🔇" : "🔊"}
       <button onclick="muteUser('${u.id}')">
         ${u.muted ? "Unmute" : "Mute"}
