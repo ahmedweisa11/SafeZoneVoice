@@ -26,7 +26,7 @@ io.on("connection", (socket) => {
     users[socket.id] = {
       nickname,
       roomId,
-      muted: false,
+      muted: !isAdmin,
       isAdmin: isAdmin
     };
 
