@@ -1,26 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Voice Chat</title>
+  <title>SaveZone Voice Chat</title>
   <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<h2>Voice Chat</h2>
+<div class="container" id="container">
+	<h2>SaveZone Voice Chat</h2>
 
-<input id="nickname" placeholder="Nickname" />
-<input id="password" placeholder="Admin password" />
+	<input id="nickname" placeholder="Nickname" />
+	<input id="password" placeholder="Admin password" />
 
-<button onclick="joinRoom()">Join</button>
+	<button class="btn" onclick="joinRoom()">Join</button>
 
-<p id="status">Not connected</p>
+	<p id="status">Not connected</p>
 
-<audio id="remoteAudio" autoplay></audio>
+	<audio id="remoteAudio" autoplay></audio>
 
-<div id="adminPanel" style="display:none;">
-  <h3>👑 Admin Panel</h3>
-  <div id="usersList"></div>
+	<div id="adminPanel" style="display:none;">
+  		<h3>👑 Admin Panel</h3>
+  	<div id="usersList"></div>
+</div>
+	
+	
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
