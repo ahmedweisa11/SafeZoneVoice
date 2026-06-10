@@ -148,13 +148,13 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
 
+    io.emit("user-left", socket.id);
+
     delete users[socket.id];
 
     io.emit("users-update", roomUsers());
 
   });
-
-});
 
 const PORT = process.env.PORT || 3000;
 
