@@ -4,7 +4,12 @@ const { Server } = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*"
+  }
+});
 
 app.use(express.static("public"));
 
@@ -12,25 +17,33 @@ const OWNER_PASSWORD = "DeathNote";
 const ADMIN_PASSWORD = "RMITK";
 
 const users = {};
-const admins = new Set();
+
+function roomUsers() {
+  return Object.entries(users).map(([id, user]) => ({
+    id,
+    nickname: user.nickname,
+    muted: user.muted,
+    role: user.role
+  }));
+}
 
 io.on("connection", (socket) => {
 
-  // JOIN ROOM
   socket.on("join-room", ({ nickname, password }) => {
 
     let role = "user";
 
     if (password === OWNER_PASSWORD) {
       role = "owner";
-    } else if (password === ADMIN_PASSWORD) {
+    }
+    else if (password === ADMIN_PASSWORD) {
       role = "admin";
     }
 
     users[socket.id] = {
       nickname,
-      muted: role === "user",
-      role
+      role,
+      muted: role === "user"
     };
 
     socket.emit("room-data", {
@@ -38,82 +51,107 @@ io.on("connection", (socket) => {
       users: roomUsers()
     });
 
+    io.emit("users-update", roomUsers());
+
   });
 
-    if (isAdmin) admins.add(socket.id);
+  // WEBRTC SIGNALING
 
-    socket.emit("room-data", {
-      isAdmin: users[socket.id].isAdmin,
-      users: getUsers(roomId)
+  socket.on("offer", data => {
+    io.to(data.to).emit("offer", {
+      offer: data.offer,
+      from: socket.id
     });
-
-    io.to(roomId).emit("users-update", getUsers(roomId));
-    socket.to(roomId).emit("user-joined", socket.id);
   });
 
-  // USERS LIST
-  function getUsers(roomId) {
-    return Object.keys(users)
-      .filter(id => users[id]?.roomId === roomId)
-      .map(id => ({
-        id,
-        nickname: users[id].nickname,
-        muted: users[id].muted,
-        role: users[id].role
-      }));
-  }
-
-  // WEBRTC
-  socket.on("offer", d =>
-    io.to(d.to).emit("offer", { offer: d.offer, from: socket.id })
-  );
-
-  socket.on("answer", d =>
-    io.to(d.to).emit("answer", { answer: d.answer, from: socket.id })
-  );
-
-  socket.on("ice-candidate", d =>
-    io.to(d.to).emit("ice-candidate", { candidate: d.candidate, from: socket.id })
-  );
-
-  // 🚫 KICK
-  socket.on("kick-user", ({ targetId }) => {
-    if (admins.has(socket.id)) {
-      io.to(targetId).emit("kicked");
-      io.sockets.sockets.get(targetId)?.disconnect();
-    }
+  socket.on("answer", data => {
+    io.to(data.to).emit("answer", {
+      answer: data.answer,
+      from: socket.id
+    });
   });
 
-  // 🔇 MUTE (FIXED)
+  socket.on("ice-candidate", data => {
+    io.to(data.to).emit("ice-candidate", {
+      candidate: data.candidate,
+      from: socket.id
+    });
+  });
+
+  // MUTE
+
   socket.on("toggle-mute", ({ targetId }) => {
-    if (admins.has(socket.id)) {
 
-      users[targetId].muted = !users[targetId].muted;
+    const me = users[socket.id];
+    const target = users[targetId];
 
-      io.to(users[targetId].roomId).emit("mute-update", {
+    if (!me || !target) return;
+
+    if (me.role === "owner") {
+
+      target.muted = !target.muted;
+
+      io.emit("mute-update", {
         targetId,
-        muted: users[targetId].muted
+        muted: target.muted
       });
 
-      io.to(users[targetId].roomId).emit(
-        "users-update",
-        getUsers(users[targetId].roomId)
-      );
+      io.emit("users-update", roomUsers());
     }
+
+    else if (
+      me.role === "admin" &&
+      target.role === "user"
+    ) {
+
+      target.muted = !target.muted;
+
+      io.emit("mute-update", {
+        targetId,
+        muted: target.muted
+      });
+
+      io.emit("users-update", roomUsers());
+    }
+
   });
 
-  // DISCONNECT CLEANUP
-  socket.on("disconnect", () => {
-    const user = users[socket.id];
+  // KICK
 
-    if (user) {
-      const roomId = user.roomId;
+  socket.on("kick-user", ({ targetId }) => {
 
-      delete users[socket.id];
-      admins.delete(socket.id);
+    const me = users[socket.id];
+    const target = users[targetId];
 
-      io.to(roomId).emit("users-update", getUsers(roomId));
+    if (!me || !target) return;
+
+    if (me.role === "owner") {
+
+      io.to(targetId).emit("kicked");
+
+      io.sockets.sockets.get(targetId)?.disconnect();
+
+      return;
     }
+
+    if (
+      me.role === "admin" &&
+      target.role === "user"
+    ) {
+
+      io.to(targetId).emit("kicked");
+
+      io.sockets.sockets.get(targetId)?.disconnect();
+    }
+
+  });
+
+  socket.on("disconnect", () => {
+
+    delete users[socket.id];
+
+    io.emit("users-update", roomUsers());
+
   });
 
 });
@@ -121,5 +159,5 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running on", PORT);
 });
