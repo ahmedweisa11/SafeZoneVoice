@@ -1,11 +1,215 @@
 body {
-  font-family: Arial;
+  font-family: Arial, sans-serif;
   text-align: center;
-  background: #1e1e2f;
-  color: white;
+  background-color: #c9d6ff;
+  background: linear-gradient(to right, #c9d6ff, #D9CDF7);
+  background: linear-gradient(
+135deg,
+#dbeafe,
+#bfdbfe,
+#93c5fd
+);
+  color: #222;
+  margin: 0;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-input, button {
-  margin: 5px;
-  padding: 10px;
+.container {
+  background-color: #fff;
+  background: linear-gradient(to right, #D2DBF8, #CCF7F4);
+  border-radius: 30px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
+  width: 768px;
+  max-width: 95%;
+  min-height: 500px;
+  padding: 30px;
+  backdrop-filter: blur(15px);
+}
+
+h2 {
+  margin-bottom: 20px;
+}
+h2{
+  font-size:28px;
+}
+
+input {
+  width: 80%;
+  max-width: 350px;
+  padding: 12px;
+  margin: 8px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #4f46e5;
+}
+
+
+
+#status {
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+#adminPanel {
+  margin-top: 25px;
+  text-align: left;
+}
+
+#adminPanel h3 {
+  text-align: center;
+}
+
+#usersList {
+  margin-top: 15px;
+}
+
+.user-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: #f4f4f4;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.role-owner {
+  color: gold;
+  font-weight: bold;
+}
+
+.role-admin {
+  color: #2563eb;
+  font-weight: bold;
+}
+
+.role-user {
+  color: #666;
+}
+
+.user-actions button {
+  margin-left: 5px;
+}
+
+.muted {
+  color: red;
+  font-weight: bold;
+}
+
+.unmuted {
+  color: green;
+  font-weight: bold;
+}
+
+audio {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  .container {
+    width: 95%;
+    padding: 20px;
+  }
+
+  input {
+    width: 95%;
+  }
+
+  .user-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+}
+
+.btn {
+  
+  display: block;
+  margin: 20px auto;
+  padding: 15px 40px;
+  border: none;
+  outline: none;
+  color: #FFF;
+  cursor: pointer;
+  position: relative;
+  z-index: 0;
+  border-radius: 12px;
+}
+.btn::after {
+  content: "";
+  z-index: -1;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-color: #333;
+  background: linear-gradient(
+    135deg,
+    #6366f1,
+    #8b5cf6
+  );
+  left: 0;
+  top: 0;
+  border-radius: 10px;
+}
+/* glow */
+.btn::before {
+  content: "";
+  background: linear-gradient(
+45deg,
+#6366f1,
+#8b5cf6,
+#06b6d4,
+#3b82f6,
+#6366f1
+);
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  background-size: 600%;
+  z-index: -1;
+  width: calc(100% + 4px);
+  height:  calc(100% + 4px);
+  filter: blur(8px);
+  animation: glowing 20s linear infinite;
+  transition: opacity .3s ease-in-out;
+  border-radius: 10px;
+  opacity: 0;
+}
+
+@keyframes glowing {
+  0% {background-position: 0 0;}
+  50% {background-position: 400% 0;}
+  100% {background-position: 0 0;}
+}
+
+/* hover */
+.btn:hover::before {
+  opacity: 1;
+}
+
+.btn:active:after {
+  background: transparent;
+}
+
+.btn:active {
+  color: #000;
+  font-weight: bold;
 }
