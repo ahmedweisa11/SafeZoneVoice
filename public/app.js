@@ -116,7 +116,7 @@ function renderUsers(users) {
     ) {
 
       buttons = `
-        <button class="btn" onclick="muteUser('${user.id}')">
+        <button onclick="muteUser('${user.id}')">
           ${user.muted ? "Unmute" : "Mute"}
         </button>
 
