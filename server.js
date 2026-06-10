@@ -8,7 +8,7 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
-const ADMIN_PASSWORD = "Real Madrid Is the King";
+const ADMIN_PASSWORD = "RMITK";
 
 const users = {};
 const admins = new Set();
