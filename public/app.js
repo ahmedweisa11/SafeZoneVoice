@@ -173,20 +173,7 @@ socket.on("kicked", () => {
 
 socket.on("mute-update", ({ targetId, muted }) => {
 
-  if (
-    targetId === myId &&
-    localStream
-  ) {
 
-    localStream
-      .getAudioTracks()
-      .forEach(track => {
-
-        track.enabled = !muted;
-
-      });
-
-  }
 
 });
 
