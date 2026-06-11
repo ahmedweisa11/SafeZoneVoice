@@ -50,7 +50,7 @@ io.on("connection", (socket) => {
       role,
       users: roomUsers()
     });
-
+    socket.broadcast.emit("user-joined", socket.id);
     io.emit("users-update", roomUsers());
 
   });
