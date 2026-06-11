@@ -116,11 +116,11 @@ function renderUsers(users) {
     ) {
 
       buttons = `
-        <button onclick="muteUser('${user.id}')">
+        <button id="btn1" onclick="muteUser('${user.id}')">
           ${user.muted ? "Unmute" : "Mute"}
         </button>
 
-        <button onclick="kickUser('${user.id}')">
+        <button id="btn1" onclick="kickUser('${user.id}')">
           Kick
         </button>
       `;
